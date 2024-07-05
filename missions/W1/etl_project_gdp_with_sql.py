@@ -1,16 +1,32 @@
-import sqlite3
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd
-import logging
 from datetime import datetime
+import sqlite3
+import logging
+import yaml
 
 
-url = 'https://en.wikipedia.org/wiki/List_of_countries_by_GDP_%28nominal%29'
-log_file = 'generated/etl_project_log.txt'
-table_name = 'Countries_by_GDP'
-db_name = 'World_Economies.db'
+URL = None
+LOG_FILE = None
+TABLE_NAME = None
+DB_NAME = None
 logger = None
+
+
+def load_config(file_path):
+    with open(file_path, 'r') as file:
+        config = yaml.safe_load(file)
+    return config
+
+
+def init(file_path = 'resources/config.yaml', mode = 'default'):
+    global url, log_file, table_name, db_name
+    config = load_config(file_path)[mode]
+    url = config['url']
+    log_file = config['log_file_path']
+    table_name = config['table_name']
+    db_name = config['db_name']
 
 
 def create_table():
@@ -184,8 +200,11 @@ def show_topn_mean_region(n: int):
 def execute(n: int, condition: int):
     # 테이블 생성
     create_table()
+    # Init Configuration
+    init()
     # 로거 초기화
     init_logger(log_file)
+
     # 'https://en.wikipedia.org/wiki/List_of_countries_by_GDP_%28nominal%29'의 표에서 IMF에서 정리한 국가-GDP 항목을 파싱하여 2차원 리스트로 반환한다.
     data = extract()
     # [[<Country>, <GDP>] ... ] 배열의 data를 받아, GDP 단위 변경(M->B), 정렬을 수행한 결과를 반환한다.
